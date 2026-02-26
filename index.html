@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Pipe Mania</title>
 <style>
+  :root { --cell: 72px; --qcell: 54px; }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body {
     background: #1a1a2e;
@@ -22,7 +23,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    transform-origin: top center;
   }
   .cell { touch-action: manipulation; }
   h1 { font-size: 2rem; color: #f0a500; letter-spacing: 4px; margin-bottom: 10px; text-shadow: 0 0 20px #f0a500; }
@@ -30,15 +30,28 @@
   #hud span { color: #aaa; }
   #hud strong { color: #f0a500; font-size: 1.2rem; }
   #lives-display { color: #e74c3c !important; letter-spacing: 3px; }
-  #timer-bar-wrap { width: 738px; height: 12px; background: #333; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+  #timer-bar-wrap { width: calc(10 * var(--cell) + 9 * 2px + 6px); height: 12px; background: #333; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
   #timer-bar { height: 100%; background: linear-gradient(90deg, #27ae60, #f0a500, #e74c3c); width: 100%; transition: width 0.1s linear; border-radius: 6px; }
   #game-area { display: flex; gap: 16px; align-items: flex-start; }
   #queue-panel { display: flex; flex-direction: column; gap: 6px; background: #16213e; border: 2px solid #0f3460; border-radius: 8px; padding: 10px 8px; }
   #queue-panel h3 { font-size: 0.7rem; color: #888; text-align: center; letter-spacing: 2px; margin-bottom: 4px; }
-  .queue-cell { width: 54px; height: 54px; background: #0f3460; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+  .queue-cell { width: var(--qcell); height: var(--qcell); background: #0f3460; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
   .queue-cell.next { border: 2px solid #f0a500; background: #1a3a6e; }
-  #grid { display: grid; grid-template-columns: repeat(10, 72px); grid-template-rows: repeat(8, 72px); gap: 2px; background: #0f3460; border: 3px solid #0f3460; border-radius: 4px; cursor: pointer; transition: background 0.6s, border-color 0.6s; }
-  .cell { width: 72px; height: 72px; background: #16213e; position: relative; transition: background 0.1s; }
+  #grid { display: grid; grid-template-columns: repeat(10, var(--cell)); grid-template-rows: repeat(8, var(--cell)); gap: 2px; background: #0f3460; border: 3px solid #0f3460; border-radius: 4px; cursor: pointer; transition: background 0.6s, border-color 0.6s; }
+  .cell { width: var(--cell); height: var(--cell); background: #16213e; position: relative; transition: background 0.1s; }
+  @media (max-width: 500px) {
+    body { padding: 12px 4px; }
+    h1 { font-size: 1.4rem; letter-spacing: 2px; }
+    #hud { gap: 8px; flex-wrap: wrap; justify-content: center; font-size: 0.9rem; }
+    #hud strong { font-size: 1rem; }
+    #game-area { flex-direction: column; align-items: center; gap: 6px; }
+    #queue-panel { flex-direction: row; padding: 6px 8px; }
+    #queue-panel h3 { display: none; }
+    #overlay-box { padding: 16px 20px; gap: 16px; }
+    #overlay-box h2 { font-size: 1.2rem; }
+    #overlay-box p { font-size: 0.85rem; }
+    #overlay-box button { padding: 10px 20px; font-size: 0.85rem; }
+  }
   .cell:hover { background: #1e2d5a; }
   .cell canvas { position: absolute; top: 0; left: 0; }
   #overlay { display: none; justify-content: center; margin-top: 16px; }
@@ -128,7 +141,14 @@
 // ============================================================
 // CONSTANTS
 // ============================================================
-const COLS = 10, ROWS = 8, CELL = 72, BW = 3, PW_RATIO = 0.34;
+const COLS = 10, ROWS = 8, BW = 3, PW_RATIO = 0.34;
+const IS_MOBILE = window.innerWidth <= 500;
+const CELL = IS_MOBILE ? Math.floor((window.innerWidth - 8 - 24) / 10) : 72; // 8=body padding×2, 24=gaps+border
+const QCELL = Math.round(CELL * 0.75);
+if (IS_MOBILE) {
+  document.documentElement.style.setProperty('--cell', CELL + 'px');
+  document.documentElement.style.setProperty('--qcell', QCELL + 'px');
+}
 
 const PIPES = {
   SH:    { id:'SH',    conn:[0,0,1,1] },
@@ -703,8 +723,8 @@ function renderQueue() {
   const cells = document.querySelectorAll('.queue-cell');
   cells.forEach((cell, i) => {
     const ctx = cell.querySelector('canvas').getContext('2d');
-    ctx.clearRect(0, 0, 54, 54);
-    if (queue[i]) drawPipe(ctx, queue[i], 0, null, 54);
+    ctx.clearRect(0, 0, QCELL, QCELL);
+    if (queue[i]) drawPipe(ctx, queue[i], 0, null, QCELL);
   });
 }
 
@@ -1302,7 +1322,7 @@ function buildDOM() {
     const cell = document.createElement('div');
     cell.className = 'queue-cell' + (i === 0 ? ' next' : '');
     const canvas = document.createElement('canvas');
-    canvas.width = 54; canvas.height = 54;
+    canvas.width = QCELL; canvas.height = QCELL;
     cell.appendChild(canvas);
     panel.appendChild(cell);
   }
@@ -1357,18 +1377,7 @@ document.getElementById('music-btn').addEventListener('click', toggleMusic);
 // ============================================================
 // BOOT
 // ============================================================
-function adjustScale() {
-  const wrap = document.getElementById('game-wrap');
-  const naturalW = wrap.scrollWidth;
-  const avail = window.innerWidth;
-  const s = Math.min(1, avail / naturalW);
-  wrap.style.transform = s < 1 ? `scale(${s})` : '';
-  wrap.style.marginBottom = s < 1 ? `-${wrap.scrollHeight * (1 - s)}px` : '';
-}
-window.addEventListener('resize', adjustScale);
-
 buildDOM();
-adjustScale();
 updateHUD();
 renderLeaderboard(null);
 </script>
