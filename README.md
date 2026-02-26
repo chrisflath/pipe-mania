@@ -4,6 +4,8 @@ A browser-based Pipe Mania clone — single HTML file, no dependencies, no build
 
 **[Play it](https://chrisflath.github.io/pipe-mania/)**
 
+![Pipe Mania screenshot](screenshot.png)
+
 ## How to play
 
 Place pipes from the queue to connect the faucet to the target before the water starts flowing. The longer your route and the more bonus tiles you hit, the higher your score.
